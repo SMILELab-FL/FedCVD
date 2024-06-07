@@ -13,6 +13,9 @@ import SimpleITK as sitk
 import skimage
 import scipy.io as sio
 import argparse
+import sys
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.io import guarantee_path
 
 
@@ -69,6 +72,7 @@ def _defaultdict_of_lists():
     """
 
     return collections.defaultdict(list)
+
 
 class ECGPreprocessor:
     def __init__(self,
@@ -651,7 +655,8 @@ class HMCQUPreprocessor:
             "LabelType": str,
             "Location": str
         })
-        self.meta[["ECHO_ID", "NbFrame", "LabelType", "Location"]].to_csv(self.meta_output_file, index=False, encoding="utf-8")
+        self.meta[["ECHO_ID", "NbFrame", "LabelType", "Location"]].to_csv(self.meta_output_file, index=False,
+                                                                          encoding="utf-8")
 
 
 def preprocess_ecg_sph(
@@ -726,8 +731,8 @@ def preprocess_ecg_ptb(
     meta_output_file = output_path + "metadata.csv"
     ecg_input_path = input_path if input_path[-1] == "/" else input_path + "/"
     ecg_output_file = output_path + "records.h5"
-    input_columns_list =["age", "sex", "scp_codes", "ecg_id", "filename_hr"]
-    output_columns_list =["ECG_ID", "Code_Label", "Age", "Sex", "Method", "Location"]
+    input_columns_list = ["age", "sex", "scp_codes", "ecg_id", "filename_hr"]
+    output_columns_list = ["ECG_ID", "Code_Label", "Age", "Sex", "Method", "Location"]
     rename_columns = {"ecg_id": "ECG_ID", "scp_codes": "Code_Label", "age": "Age", "sex": "Sex"}
     labels_list = [
         "NORM",
@@ -740,7 +745,7 @@ def preprocess_ecg_ptb(
         "LAO/LAE", "LVH", "RVH",
         "AMI", "IMI", "ASMI"
     ]
-    labels_map ={
+    labels_map = {
         "NORM": "0",
         "STACH": "1", "SBRAD": "2", "SARRH": "3",
         "PAC": "4",
@@ -751,8 +756,8 @@ def preprocess_ecg_ptb(
         "LAO/LAE": "14", "LVH": "15", "RVH": "16",
         "AMI": "17", "IMI": "18", "ASMI": "19"
     }
-    ecg_length: 5000
-    ecg_leads: 12
+    ecg_length = 5000
+    ecg_leads = 12
 
     preprocessor = PTBPreprocessor(
         meta_input_file=meta_input_file,
@@ -781,14 +786,14 @@ def preprocess_ecg_sxph(
     else:
         output_path = output_path + "/ECG/preprocessed/" + location + "/"
     guarantee_path(output_path)
-    meta_input_file =""
+    meta_input_file = ""
     meta_output_file = output_path + "metadata.csv"
     ecg_input_path = input_path + "WFDBRecords/" if input_path[-1] == "/" else input_path + "/WFDBRecords/"
     ecg_output_file = output_path + "records.h5"
     input_columns_list = []
-    output_columns_list =["ECG_ID", "Code_Label", "Age", "Sex", "Method", "Location"]
-    rename_columns ={}
-    labels_list =[
+    output_columns_list = ["ECG_ID", "Code_Label", "Age", "Sex", "Method", "Location"]
+    rename_columns = {}
+    labels_list = [
         "164854000",
         "427084000", "426177001", "427393009",
         "164885009",
@@ -814,8 +819,8 @@ def preprocess_ecg_sxph(
         "67741000119109": "14", "164873001": "15", "164877000": "16",
         "429731003": "17", "7326005": "18", "164868007": "19"
     }
-    ecg_length: 5000
-    ecg_leads: 12
+    ecg_length = 5000
+    ecg_leads = 12
     preprocessor = SXPHPreprocessor(
         meta_input_file=meta_input_file,
         meta_output_file=meta_output_file,
@@ -843,13 +848,13 @@ def preprocess_ecg_geo(
     else:
         output_path = output_path + "/ECG/preprocessed/" + location + "/"
     guarantee_path(output_path)
-    meta_input_file =""
+    meta_input_file = ""
     meta_output_file = output_path + "metadata.csv"
     ecg_input_path = input_path if input_path[-1] == "/" else input_path + "/"
     ecg_output_file = output_path + "records.h5"
     input_columns_list = []
     output_columns_list = ["ECG_ID", "Code_Label", "Age", "Sex", "Method", "Location"]
-    rename_columns ={}
+    rename_columns = {}
     labels_list = [
         "164854000",
         "427084000", "426177001", "427393009",
@@ -876,8 +881,8 @@ def preprocess_ecg_geo(
         "67741000119109": "14", "164873001": "15", "164877000": "16",
         "429731003": "17", "7326005": "18", "164868007": "19"
     }
-    ecg_length: 5000
-    ecg_leads: 12
+    ecg_length = 5000
+    ecg_leads = 12
     preprocessor = GEPreprocessor(
         meta_input_file=meta_input_file,
         meta_output_file=meta_output_file,
@@ -894,6 +899,7 @@ def preprocess_ecg_geo(
     )
     preprocessor.run()
 
+
 def preprocess_echo_camus(
         input_path: str,
         output_path: str,
@@ -908,8 +914,8 @@ def preprocess_echo_camus(
     meta_output_file = output_path + "metadata.csv"
     echo_output_file = output_path + "records.h5"
     output_columns_list = ["ECHO_ID", "Age", "Sex", "ED", "ES", "NbFrame", "ImageQuality", "LVedv",
-                                        "LVesv", "LVef", "LabelType", "Location"]
-    view = "A4C"
+                           "LVesv", "LVef", "LabelType", "Location"]
+    view = "4CH"
     resize = (112, 112)
     preprocessor = CamusPreprocessor(
         input_path=input_path,
@@ -951,9 +957,9 @@ def preprocess_echo_hmc(
 ):
     location = "client3"
     if output_path[-1] == "/":
-        output_path = output_path + "Echo/preprocessed/" + location + "/"
+        output_path = output_path + "ECHO/preprocessed/" + location + "/"
     else:
-        output_path = output_path + "/Echo/preprocessed/" + location + "/"
+        output_path = output_path + "/ECHO/preprocessed/" + location + "/"
     guarantee_path(output_path)
     input_path = input_path if input_path[-1] == "/" else input_path + "/"
     meta_output_file = output_path + "metadata.csv"
@@ -975,19 +981,21 @@ parser.add_argument("--dataset_name", type=str, default="")
 
 if __name__ == "__main__":
     args = parser.parse_args()
+    input_path = args.input_path
+    input_path = input_path if input_path[-1] == "/" else input_path + "/"
     if args.dataset_name == "sph":
-        preprocess_ecg_sph(args.input_path, args.output_path)
+        preprocess_ecg_sph(input_path + "ECG/raw/SPH/", args.output_path)
     elif args.dataset_name == "ptb":
-        preprocess_ecg_ptb(args.input_path, args.output_path)
+        preprocess_ecg_ptb(input_path + "ECG/raw/PTB/", args.output_path)
     elif args.dataset_name == "sxph":
-        preprocess_ecg_sxph(args.input_path, args.output_path)
-    elif args.dataset_name == "geo":
-        preprocess_ecg_geo(args.input_path, args.output_path)
+        preprocess_ecg_sxph(input_path + "ECG/raw/SXPH/", args.output_path)
+    elif args.dataset_name == "g12ec":
+        preprocess_ecg_geo(input_path + "ECG/raw/G12EC/", args.output_path)
     elif args.dataset_name == "camus":
-        preprocess_echo_camus(args.input_path, args.output_path)
-    elif args.dataset_name == "echo_dynamic":
-        preprocess_echo_dynamic(args.input_path, args.output_path)
-    elif args.dataset_name == "hmc_qu":
-        preprocess_echo_hmc(args.input_path, args.output_path)
+        preprocess_echo_camus(input_path + "ECHO/raw/CAMUS/", args.output_path)
+    elif args.dataset_name == "echonet":
+        preprocess_echo_dynamic(input_path + "ECHO/raw/ECHONET/", args.output_path)
+    elif args.dataset_name == "hmcqu":
+        preprocess_echo_hmc(input_path + "ECHO/raw/HMCQU/", args.output_path)
     else:
         raise ValueError("Invalid dataset name")

@@ -1,17 +1,16 @@
 
-from algorithm.echo.centralized import CentralizedSGDTrainer, CentralizedSGDResNetTrainer, CentralizedIgnoreSGDTrainer
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from algorithm.echo.centralized import CentralizedIgnoreSGDTrainer
 from fedlab.utils.functional import setup_seed
 from fedlab.utils.logger import Logger
 from torch.utils.data import DataLoader
 from datetime import datetime
-import os
-import torch
-import torch.optim as optim
 import torch.nn as nn
-from model.resnet import resnet50
 from model.unet import unet
 from utils.evaluation import MultiLabelEvaluator
-from utils.dataloader import get_dataloader, get_echo_dataset
+from utils.dataloader import get_echo_dataset
 from utils.io import guarantee_path
 import json
 import argparse

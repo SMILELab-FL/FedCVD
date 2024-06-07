@@ -1,16 +1,17 @@
 
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from algorithm.ecg.centralized import CentralizedSGDTrainer
 from fedlab.utils.functional import setup_seed
 from fedlab.utils.logger import Logger
 from torch.utils.data import DataLoader
 from datetime import datetime
-import os
-import torch
 import torch.nn as nn
 from model.resnet import resnet1d34
-from model.rnn import lstm
 from utils.evaluation import MultiLabelEvaluator
-from utils.dataloader import get_dataloader, get_ecg_dataset
+from utils.dataloader import get_ecg_dataset
 from utils.io import guarantee_path
 import json
 import argparse

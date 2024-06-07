@@ -1,3 +1,6 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from algorithm.echo.fedavg import FedAvgServerHandler, FedAvgSerialClientTrainer
 from algorithm.pipeline import Pipeline
@@ -5,14 +8,10 @@ from fedlab.utils.functional import setup_seed
 from fedlab.utils.logger import Logger
 from torch.utils.data import DataLoader
 from datetime import datetime
-import os
-import torch
-import torch.optim as optim
 import torch.nn as nn
-from model.resnet import resnet1d34
 from model.unet import unet
 from utils.evaluation import FedClientMultiLabelEvaluator, FedServerMultiLabelEvaluator
-from utils.dataloader import get_dataloader, get_dataset, get_echo_dataset
+from utils.dataloader import get_echo_dataset
 from utils.io import guarantee_path
 import json
 import argparse
@@ -89,7 +88,7 @@ if __name__ == "__main__":
 
     setting = {
         "dataset": "ECHO",
-        "model": "unet",
+        "model": args.model,
         "batch_size": batch_size,
         "client_lr": lr,
         "criterion": "CELoss",

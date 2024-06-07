@@ -18,5 +18,5 @@ torchvision >= 0.18.0
 tqdm
 torchmetrics
 wandb
-skimage
+scikit-image
 
