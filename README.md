@@ -151,9 +151,9 @@ Make sure the data is stored in the correct directory structure. The reference s
 │   │   ├── A4C
 │   │   │   ├── ES0001 _4CH_1.avi
 │   │   │   └── ...
-│   │   ├── LV Ground-truth Segmentation Masks
-│   │   │   ├── Mask_ES0001 _4CH_1.mat
-│   │   │   └── ...
+│   ├── LV Ground-truth Segmentation Masks
+│   │   ├── Mask_ES0001 _4CH_1.mat
+│   │   └── ...
 ```
 After downloading the data, you can run the following scripts to preprocess and split the data:
 
