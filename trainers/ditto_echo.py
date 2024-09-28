@@ -19,11 +19,12 @@ import argparse
 import wandb
 
 parser = argparse.ArgumentParser(description="Standalone training example")
+parser.add_argument("--input_path", type=str, default="")
+parser.add_argument("--output_path", type=str, default="")
 parser.add_argument("--seed", type=int, default=42)
 parser.add_argument("--mu", type=float, default=0.01)
 parser.add_argument("--batch_size", type=int, default=32)
 parser.add_argument("--lr", type=float, default=0.1)
-parser.add_argument("--mu", type=float, default=0.1)
 parser.add_argument("--communication_round", type=int, default=50)
 parser.add_argument("--max_epoch", type=int, default=1)
 parser.add_argument("--n_classes", type=int, default=4)
@@ -33,7 +34,6 @@ parser.add_argument("--frac", type=float, default=1.0)
 parser.add_argument("--num_clients", type=int, default=3)
 parser.add_argument("--mode", type=str, default="ditto")
 parser.add_argument("--clients", type=list[str], default=["client1", "client2", "client3"])
-parser.add_argument("--frac", type=float, default=1.0)
 
 if __name__ == "__main__":
     args = parser.parse_args()

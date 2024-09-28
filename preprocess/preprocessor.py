@@ -103,6 +103,7 @@ class ECGPreprocessor:
         self.ecg_leads = ecg_leads
         self.meta = None
         self.ecg = None
+        self.patient_set = set()
 
     def label_load(self):
         self.meta = pd.read_csv(self.meta_input_file)
@@ -116,6 +117,7 @@ class ECGPreprocessor:
             self.meta[self.output_columns_list].to_csv(self.meta_output_file, index=False, encoding="utf-8")
         else:
             self.meta.to_csv(self.meta_output_file, index=False, encoding="utf-8")
+        print(f"Samples: {self.meta.shape[0]} | Patients: {len(self.patient_set)}")
 
     def run(self):
         self.label_load()
@@ -214,6 +216,7 @@ class SPHPreprocessor(ECGPreprocessor):
                 self.meta.loc[idx, "ECG_ID"] = f"{ecg_id:06d}"
                 self.meta.loc[idx, "Method"] = flag
                 ecg_id += 1
+                self.patient_set.add(row["Patient_ID"])
             else:
                 del_rows.append(idx)
             file.close()
@@ -262,6 +265,7 @@ class PTBPreprocessor(ECGPreprocessor):
                 self.meta.loc[idx, "ecg_id"] = f"{ecg_id:06d}"
                 self.meta.loc[idx, "Method"] = flag
                 ecg_id += 1
+                self.patient_set.add(row["patient_id"])
             else:
                 del_rows.append(idx)
         output_file.close()
@@ -333,6 +337,7 @@ class SXPHPreprocessor(ECGPreprocessor):
                                 "Sex": sex, "Method": flag, "Location": self.location
                             }
                             ecg_id += 1
+                            self.patient_set.add(ecg_id)
 
     @staticmethod
     def _sex_map(sex: str) -> str | None:
@@ -361,6 +366,7 @@ class GEPreprocessor(ECGPreprocessor):
         return ";".join(map_list)
 
     def ecg_preprocess(self):
+        cnt = 0
         output_file = h5py.File(self.ecg_output_file, "w")
         ecg_id = 0
         del_rows = []
@@ -374,6 +380,7 @@ class GEPreprocessor(ECGPreprocessor):
                      if path.is_file() and path.name != "RECORDS"])
             )
             for file_stem in file_stem_list:
+                cnt += 1
                 ecg, meta = wfdb.rdsamp(str(Path(directory, file_stem)))
                 comments = {}
                 for item in meta["comments"]:
@@ -396,6 +403,7 @@ class GEPreprocessor(ECGPreprocessor):
                             "Sex": sex, "Method": flag, "Location": self.location
                         }
                         ecg_id += 1
+        print(cnt)
 
     @staticmethod
     def _sex_map(sex: str) -> str | None:
@@ -673,7 +681,7 @@ def preprocess_ecg_sph(
     meta_output_file = output_path + "metadata.csv"
     ecg_input_path = input_path + "records/" if input_path[-1] == "/" else input_path + "/records/"
     ecg_output_file = output_path + "records.h5"
-    input_columns_list = ["ECG_ID", "AHA_Code", "Age", "Sex"]
+    input_columns_list = ["ECG_ID", "AHA_Code", "Age", "Sex", "Patient_ID"]
     output_columns_list = ["ECG_ID", "Code_Label", "Age", "Sex", "Method", "Location"]
     rename_columns = {"ECG_ID": "ECG_ID", "AHA_Code": "Code_Label", "Age": "Age", "Sex": "Sex"}
     labels_list = [
@@ -731,7 +739,7 @@ def preprocess_ecg_ptb(
     meta_output_file = output_path + "metadata.csv"
     ecg_input_path = input_path if input_path[-1] == "/" else input_path + "/"
     ecg_output_file = output_path + "records.h5"
-    input_columns_list = ["age", "sex", "scp_codes", "ecg_id", "filename_hr"]
+    input_columns_list = ["age", "sex", "scp_codes", "ecg_id", "filename_hr", "patient_id"]
     output_columns_list = ["ECG_ID", "Code_Label", "Age", "Sex", "Method", "Location"]
     rename_columns = {"ecg_id": "ECG_ID", "scp_codes": "Code_Label", "age": "Age", "sex": "Sex"}
     labels_list = [

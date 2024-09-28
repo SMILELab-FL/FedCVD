@@ -15,6 +15,8 @@ from utils.dataloader import get_ecg_dataset
 from utils.io import guarantee_path
 import json
 import argparse
+import wandb
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--input_path", type=str, default="")
@@ -96,6 +98,12 @@ if __name__ == "__main__":
     }
     with open(output_path + "setting.json", "w") as f:
         f.write(json.dumps(setting))
+
+    wandb.init(
+        project="FedCVD_ECG_FL",
+        name=args.case_name,
+        config=setting
+    )
 
     client_loggers = [
         Logger(log_name=client, log_file=output_path + client + "/logger.log") for client in clients

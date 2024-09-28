@@ -34,6 +34,7 @@ class FedAvgServerHandler(SyncServerHandler):
         logger: Logger = None,
     ):
         super(FedAvgServerHandler, self).__init__(model, test_loaders, criterion, output_path, evaluator, communication_round, num_clients, sample_ratio, device, logger)
+        self.num_classes = num_classes
         self.dice_macro = Dice(ignore_index=0, num_classes=num_classes, average="macro").to(self._device)
         self.dice_micro = Dice(ignore_index=0, num_classes=num_classes, average="macro").to(self._device)
         guarantee_path(self.output_path + "server/train/")

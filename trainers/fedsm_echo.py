@@ -1,8 +1,9 @@
+
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from algorithm.echo.fedavg import FedAvgServerHandler, FedAvgSerialClientTrainer
+from algorithm.echo.fedsm import FedSMServerHandler, FedSMSerialClientTrainer
 from algorithm.pipeline import Pipeline
 from fedlab.utils.functional import setup_seed
 from fedlab.utils.logger import Logger
@@ -10,6 +11,7 @@ from torch.utils.data import DataLoader
 from datetime import datetime
 import torch.nn as nn
 from model.unet import unet
+from model.vgg import vgg2d11
 from utils.evaluation import FedClientMultiLabelEvaluator, FedServerMultiLabelEvaluator
 from utils.dataloader import get_echo_dataset
 from utils.io import guarantee_path
@@ -17,19 +19,23 @@ import json
 import argparse
 import wandb
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(description="Standalone training example")
 parser.add_argument("--input_path", type=str, default="")
 parser.add_argument("--output_path", type=str, default="")
 parser.add_argument("--seed", type=int, default=42)
-parser.add_argument("--batch_size", type=int, default=64)
-parser.add_argument("--lr", type=float, default=0.01)
+parser.add_argument("--batch_size", type=int, default=32)
+parser.add_argument("--lambda_", type=float, default=0.01)
+parser.add_argument("--gamma", type=float, default=0.01)
+parser.add_argument("--lr", type=float, default=0.1)
 parser.add_argument("--communication_round", type=int, default=50)
 parser.add_argument("--max_epoch", type=int, default=1)
 parser.add_argument("--n_classes", type=int, default=4)
 parser.add_argument("--model", type=str, default="unet")
+parser.add_argument("--model_selector", type=str, default="vgg2d11")
 parser.add_argument("--case_name", type=str, default="")
+parser.add_argument("--frac", type=float, default=1.0)
 parser.add_argument("--num_clients", type=int, default=3)
-parser.add_argument("--mode", type=str, default="fedavg")
+parser.add_argument("--mode", type=str, default="fedsm")
 parser.add_argument("--clients", type=list[str], default=["client1", "client2", "client3"])
 
 if __name__ == "__main__":
@@ -42,6 +48,8 @@ if __name__ == "__main__":
     lr = args.lr
     num_clients = args.num_clients
     sample_ratio = 1
+    lambda_ = args.lambda_
+    gamma = args.gamma
 
     input_path = args.input_path
     output_path = args.output_path
@@ -76,6 +84,7 @@ if __name__ == "__main__":
         DataLoader(test_dataset, batch_size=batch_size, shuffle=False) for test_dataset in test_datasets
     ]
     model = unet()
+    model_selector = vgg2d11()
     criterion = nn.CrossEntropyLoss(ignore_index=-1)
     client_evaluators = [FedClientMultiLabelEvaluator() for _ in range(1, 4)]
     server_evaluator = FedServerMultiLabelEvaluator()
@@ -94,6 +103,8 @@ if __name__ == "__main__":
         "sample_ratio": sample_ratio,
         "communication_round": communication_round,
         "max_epoch": max_epoch,
+        "lambda": lambda_,
+        "gamma": gamma,
         "seed": args.seed
     }
     with open(output_path + "setting.json", "w") as f:
@@ -102,15 +113,7 @@ if __name__ == "__main__":
     wandb.init(
         project="FedCVD_ECHO_FL",
         name=args.case_name,
-        config={
-            "dataset": "ECHO",
-            "model": args.model,
-            "batch_size": batch_size,
-            "lr": lr,
-            "criterion": "CELoss",
-            "max_epoch": max_epoch,
-            "seed": args.seed
-        }
+        config=setting
     )
 
     client_loggers = [
@@ -118,8 +121,9 @@ if __name__ == "__main__":
     ]
     server_logger = Logger(log_name="server", log_file=output_path + "server/logger.log")
 
-    trainer = FedAvgSerialClientTrainer(
+    trainer = FedSMSerialClientTrainer(
         model=model,
+        model_selector=model_selector,
         num_clients=num_clients,
         train_loaders=train_loaders,
         test_loaders=test_loaders,
@@ -133,9 +137,12 @@ if __name__ == "__main__":
         logger=client_loggers
     )
 
-    handler = FedAvgServerHandler(
+    handler = FedSMServerHandler(
+        lambda_=lambda_,
+        gamma=gamma,
         num_classes=args.n_classes,
         model=model,
+        model_selector=model_selector,
         test_loaders=test_loaders,
         criterion=criterion,
         output_path=output_path,

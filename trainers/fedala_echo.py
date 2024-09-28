@@ -1,8 +1,9 @@
+
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from algorithm.echo.fedavg import FedAvgServerHandler, FedAvgSerialClientTrainer
+from algorithm.echo.fedala import FedALASerialClientTrainer, FedALAServerHandler
 from algorithm.pipeline import Pipeline
 from fedlab.utils.functional import setup_seed
 from fedlab.utils.logger import Logger
@@ -17,21 +18,28 @@ import json
 import argparse
 import wandb
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(description="Standalone training example")
 parser.add_argument("--input_path", type=str, default="")
 parser.add_argument("--output_path", type=str, default="")
 parser.add_argument("--seed", type=int, default=42)
-parser.add_argument("--batch_size", type=int, default=64)
-parser.add_argument("--lr", type=float, default=0.01)
+parser.add_argument("--batch_size", type=int, default=32)
+parser.add_argument("--lr", type=float, default=0.1)
+parser.add_argument("--rand_percent", type=float, default=5)
+parser.add_argument("--layer_idx", type=int, default=0)
+parser.add_argument("--eta", type=float, default=1.0)
+parser.add_argument("--threshold", type=float, default=0.1)
+parser.add_argument("--num_pre_loss", type=int, default=10)
 parser.add_argument("--communication_round", type=int, default=50)
 parser.add_argument("--max_epoch", type=int, default=1)
 parser.add_argument("--n_classes", type=int, default=4)
 parser.add_argument("--model", type=str, default="unet")
 parser.add_argument("--case_name", type=str, default="")
+parser.add_argument("--frac", type=float, default=1.0)
 parser.add_argument("--num_clients", type=int, default=3)
-parser.add_argument("--mode", type=str, default="fedavg")
+parser.add_argument("--mode", type=str, default="fedala")
 parser.add_argument("--clients", type=list[str], default=["client1", "client2", "client3"])
 
+os.environ['CUDA_VISIBLE_DEVICES'] = "2"
 if __name__ == "__main__":
     args = parser.parse_args()
     setup_seed(args.seed)
@@ -40,6 +48,11 @@ if __name__ == "__main__":
     communication_round = args.communication_round
     batch_size = args.batch_size
     lr = args.lr
+    rand_percent = args.rand_percent
+    layer_idx = args.layer_idx
+    eta = args.eta
+    threshold = args.threshold
+    num_pre_loss = args.num_pre_loss
     num_clients = args.num_clients
     sample_ratio = 1
 
@@ -94,6 +107,11 @@ if __name__ == "__main__":
         "sample_ratio": sample_ratio,
         "communication_round": communication_round,
         "max_epoch": max_epoch,
+        "rand_percent": rand_percent,
+        "layer_idx": layer_idx,
+        "eta": eta,
+        "threshold": threshold,
+        "num_pre_loss": num_pre_loss,
         "seed": args.seed
     }
     with open(output_path + "setting.json", "w") as f:
@@ -102,15 +120,7 @@ if __name__ == "__main__":
     wandb.init(
         project="FedCVD_ECHO_FL",
         name=args.case_name,
-        config={
-            "dataset": "ECHO",
-            "model": args.model,
-            "batch_size": batch_size,
-            "lr": lr,
-            "criterion": "CELoss",
-            "max_epoch": max_epoch,
-            "seed": args.seed
-        }
+        config=setting
     )
 
     client_loggers = [
@@ -118,9 +128,12 @@ if __name__ == "__main__":
     ]
     server_logger = Logger(log_name="server", log_file=output_path + "server/logger.log")
 
-    trainer = FedAvgSerialClientTrainer(
+    trainer = FedALASerialClientTrainer(
+        rand_percent=rand_percent,
         model=model,
         num_clients=num_clients,
+        batch_size=batch_size,
+        train_datasets=train_datasets,
         train_loaders=train_loaders,
         test_loaders=test_loaders,
         num_classes=args.n_classes,
@@ -129,11 +142,15 @@ if __name__ == "__main__":
         max_epoch=max_epoch,
         output_path=output_path,
         evaluators=client_evaluators,
+        layer_idx=layer_idx,
+        eta=eta,
+        threshold=threshold,
+        num_pre_loss=num_pre_loss,
         device=None,
         logger=client_loggers
     )
 
-    handler = FedAvgServerHandler(
+    handler = FedALAServerHandler(
         num_classes=args.n_classes,
         model=model,
         test_loaders=test_loaders,

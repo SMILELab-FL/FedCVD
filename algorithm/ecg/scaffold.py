@@ -1,6 +1,6 @@
 
 from copy import deepcopy
-from algorithm.ecg.fedavg import FedAvgServerHandler, FedAvgSerialClientTrainer, FedAvgNonIIDServerHandler, FedAvgNonIIDSerialClientTrainer
+from algorithm.ecg.fedavg import FedAvgServerHandler, FedAvgSerialClientTrainer
 from utils.evaluation import calculate_accuracy, calculate_multilabel_metrics, get_pred_label, transfer_tensor_to_numpy
 from utils.evaluation import Accumulator
 from fedlab.utils.logger import Logger

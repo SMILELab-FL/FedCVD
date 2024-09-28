@@ -13,6 +13,7 @@ import torch
 import tqdm
 import numpy as np
 import pandas as pd
+import wandb
 
 
 class FedAvgServerHandler(SyncServerHandler):
@@ -43,7 +44,6 @@ class FedAvgServerHandler(SyncServerHandler):
         weights = [ele[1] for ele in buffer]
         serialized_parameters = Aggregators.fedavg_aggregate(parameters_list, weights)
         SerializationTool.deserialize_model(self._model, serialized_parameters)
-
 
     def finish(self):
         self.evaluator.save(self.output_path + "server/metric.json")
@@ -100,6 +100,15 @@ class FedAvgServerHandler(SyncServerHandler):
             metric_dict["loss"] = metric[0] / metric[2]
             l_metric_dict[str(idx)] = metric_dict
             self._LOGGER.info(f"Client {idx + 1} Local Test Loss: {metric[0] / metric[2]} | Local Test Acc: {metric[1] / metric[2]}")
+            wandb.log(
+                {
+                    f"server_client{idx + 1}_local_test_loss": metric[0] / metric[2],
+                    f"server_client{idx + 1}_local_test_acc": metric[1] / metric[2],
+                    f"server_client{idx + 1}_local_test_micro_f1": metric_dict["micro_f1"],
+                    f"server_client{idx + 1}_local_test_mAP": float(np.average(metric_dict["average_precision_score"]))
+                },
+                step=self.round
+            )
         self.evaluator.add_dict("local_test", self.round, l_metric_dict)
 
     def global_test(self):
@@ -155,6 +164,16 @@ class FedAvgServerHandler(SyncServerHandler):
         metric_dict["loss"] = metric[0] / metric[2]
         self.evaluator.add_dict("global_test", self.round, metric_dict)
         self._LOGGER.info(f"Global Test Loss: {metric[0] / metric[2]} | Global Test Acc: {metric[1] / metric[2]}")
+        wandb.log(
+            {
+                f"server_global_test_loss": metric[0] / metric[2],
+                f"server_global_test_acc": metric[1] / metric[2],
+                f"server_global_test_micro_f1": metric_dict["micro_f1"],
+                f"server_global_test_mAP": float(np.average(metric_dict["average_precision_score"]))
+            },
+            step=self.round
+        )
+
     def evaluate(self, evaluator):
         pass
 
@@ -318,6 +337,15 @@ class FedAvgSerialClientTrainer(SGDSerialClientTrainer):
             metric_dict["loss"] = metric[0] / metric[2]
             l_metric_dict[str(idx)] = metric_dict
             self._LOGGER[client_idx].info(f"Epoch {epoch} | Client {idx + 1} Local Test Loss: {metric[0] / metric[2]} | Local Test Acc: {metric[1] / metric[2]}")
+            wandb.log(
+                {
+                    f"client{client_idx + 1}_client{idx + 1}_local_test_loss": metric[0] / metric[2],
+                    f"client{client_idx + 1}_client{idx + 1}_local_test_acc": metric[1] / metric[2],
+                    f"client{client_idx + 1}_client{idx + 1}_local_test_micro_f1": metric_dict["micro_f1"],
+                    f"client{client_idx + 1}_client{idx + 1}_local_test_mAP": float(np.average(metric_dict["average_precision_score"]))
+                },
+                step=self.current_round
+            )
         self.evaluators[client_idx].add_dict("local_test", self.current_round, epoch, l_metric_dict)
 
     def global_test(self, idx, epoch):
@@ -373,3 +401,12 @@ class FedAvgSerialClientTrainer(SGDSerialClientTrainer):
         metric_dict["loss"] = metric[0] / metric[2]
         self.evaluators[idx].add_dict("global_test", self.current_round, epoch, metric_dict)
         self._LOGGER[idx].info(f"Epoch {epoch} | Global Test Loss: {metric[0] / metric[2]} | Global Test Acc: {metric[1] / metric[2]}")
+        wandb.log(
+            {
+                f"client{idx + 1}_global_test_loss": metric[0] / metric[2],
+                f"client{idx + 1}_global_test_acc": metric[1] / metric[2],
+                f"client{idx + 1}_global_test_micro_f1": metric_dict["micro_f1"],
+                f"client{idx + 1}_global_test_mAP": float(np.average(metric_dict["average_precision_score"]))
+            },
+            step=self.current_round
+        )
