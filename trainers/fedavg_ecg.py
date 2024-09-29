@@ -28,6 +28,7 @@ parser.add_argument("--lr", type=float, default=0.1)
 parser.add_argument("--model", type=str, default="resnet1d34")
 parser.add_argument("--mode", type=str, default="fedavg")
 parser.add_argument("--communication_round", type=int, default=50)
+parser.add_argument("--case_name", type=str, default="fedavg_ecg")
 parser.add_argument("--num_clients", type=int, default=4)
 parser.add_argument("--clients", type=list[str], default=["client1", "client2", "client3", "client4"])
 

@@ -103,8 +103,8 @@ class ScaffoldSerialClientTrainer(FedAvgSerialClientTrainer):
                 self.cs[idx] = torch.zeros_like(model_parameters)
             for epoch in range(self.max_epoch):
                 pack = self.train(epoch, global_c, idx)
-                self.local_test(idx, epoch)
-                self.global_test(idx, epoch)
+                # self.local_test(idx, epoch)
+                # self.global_test(idx, epoch)
             dy = self.model_parameters - frz_model
             dc = -1.0 / (self.max_epoch * len(self.train_loaders[idx]) * self.lr) * dy - global_c
             self.cs[idx] += dc

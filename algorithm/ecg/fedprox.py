@@ -60,8 +60,8 @@ class FedProxSerialClientTrainer(FedAvgSerialClientTrainer):
             frz_model = deepcopy(self._model)
             for epoch in range(self.max_epoch):
                 pack = self.train(epoch, frz_model, idx)
-                self.local_test(idx, epoch)
-                self.global_test(idx, epoch)
+                # self.local_test(idx, epoch)
+                # self.global_test(idx, epoch)
             self.cache.append(pack)
             torch.save(
                 {
