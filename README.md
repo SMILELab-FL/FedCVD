@@ -3,9 +3,7 @@ The First Real-World Federated Learning Benchmark on Cardiovascular Disease Data
 
 ## Framework
 
-<div style="text-align:center">
-    <img src="./assets/framework.png" alt="framework" style="width:100%;height:100%;" />
-</div>
+![](./assets/framework.png)
 
 ## Installation
 ### Directory Structure
