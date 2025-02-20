@@ -100,7 +100,8 @@ class FedAvgServerHandler(SyncServerHandler):
                     f"client{idx + 1}_test_micro_dice": metric[1] / metric[-1],
                     f"client{idx + 1}_test_macro_dice": metric[2] / metric[-1],
                     f"client{idx + 1}_test_hd": metric[3] / metric[-1]
-                }
+                },
+                step=self.round
             )
             l_metric_dict[str(idx)] = metric_dict
             self._LOGGER.info(f"Round {self.round} | Client {idx + 1} Local Test Loss: {metric[0] / metric[-1]} | Local Test Dice: {metric[2] / metric[-1]}")
@@ -151,7 +152,8 @@ class FedAvgServerHandler(SyncServerHandler):
                 "global_test_micro_dice": metric[1] / metric[-1],
                 "global_test_macro_dice": metric[2] / metric[-1],
                 "global_test_hd": metric[3] / metric[-1]
-            }
+            },
+            step=self.round
         )
         self.evaluator.add_dict("global_test", self.round, metric_dict)
         self._LOGGER.info(f"Round {self.round} | Global Test Loss: {metric[0] / metric[-1]} | Global Test Dice: {metric[2] / metric[-1]}")
@@ -173,6 +175,7 @@ class FedAvgSerialClientTrainer(SGDSerialClientTrainer):
             max_epoch: int,
             output_path: str,
             evaluators,
+            optimizer_name: str = "SGD",
             device: torch.device | None = None,
             logger=None,
             personal=False
@@ -182,7 +185,12 @@ class FedAvgSerialClientTrainer(SGDSerialClientTrainer):
         self.lr = lr
         self.criterion = criterion
         self.max_epoch = max_epoch
-        self.optimizer = torch.optim.SGD(self._model.parameters(), self.lr)
+        if optimizer_name == "SGD":
+            self.optimizer = torch.optim.SGD(self._model.parameters(), self.lr)
+        elif optimizer_name == "Adam":
+            self.optimizer = torch.optim.Adam(self._model.parameters(), self.lr)
+        else:
+            raise ValueError(f"Unsupported optimizer: {optimizer_name}")
         self.output_path = output_path
         self.current_round = 0
         self.evaluators = evaluators
@@ -318,7 +326,8 @@ class FedAvgSerialClientTrainer(SGDSerialClientTrainer):
                     f"client{client_idx + 1}_client{idx + 1}_test_micro_dice": metric[1] / metric[-1],
                     f"client{client_idx + 1}_client{idx + 1}_test_macro_dice": metric[2] / metric[-1],
                     f"client{client_idx + 1}_client{idx + 1}_test_hd": metric[3] / metric[-1]
-                }
+                },
+                step=self.current_round
             )
             l_metric_dict[str(idx)] = metric_dict
             self._LOGGER[client_idx].info(f"Epoch {epoch} | Client {idx + 1} Local Test Loss: {metric[0] / metric[-1]} | Local Test Dice: {metric[2] / metric[-1]}")
@@ -369,7 +378,8 @@ class FedAvgSerialClientTrainer(SGDSerialClientTrainer):
                 f"client{idx + 1}_global_test_micro_dice": metric[1] / metric[-1],
                 f"client{idx + 1}_global_test_macro_dice": metric[2] / metric[-1],
                 f"client{idx + 1}_global_test_hd": metric[3] / metric[-1]
-            }
+            },
+            step=self.current_round
         )
         self.evaluators[idx].add_dict("global_test", self.current_round, epoch, metric_dict)
         self._LOGGER[idx].info(f"Epoch {epoch} | Global Test Loss: {metric[0] / metric[-1]} | Global Test Dice: {metric[2] / metric[-1]}")

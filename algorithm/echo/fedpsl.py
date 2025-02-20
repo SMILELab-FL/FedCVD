@@ -24,7 +24,7 @@ class FedPSLServerHandler(FedAvgServerHandler):
         weights = [ele[1] for ele in buffer]
         c_weights = [ele[2] for ele in buffer]
         print(c_weights)
-        c_idx = SerializationTool.serialize_model(self._model.outc).size(0)
+        c_idx = SerializationTool.serialize_model(self._model.out).size(0)
         weight_step = (c_idx - self.num_classes) // self.num_classes
         bias_step = 1
         serialized_parameters = Aggregators.fedavg_aggregate(parameters_list, weights)
@@ -71,6 +71,7 @@ class FedPSLSerialClientTrainer(FedAvgSerialClientTrainer):
             max_epoch: int,
             output_path: str,
             evaluators,
+            optimizer_name: str = "SGD",
             device: torch.device | None = None,
             logger=None,
             personal=False
@@ -86,6 +87,7 @@ class FedPSLSerialClientTrainer(FedAvgSerialClientTrainer):
             max_epoch=max_epoch,
             output_path=output_path,
             evaluators=evaluators,
+            optimizer_name=optimizer_name,
             device=device,
             logger=logger,
             personal=personal
@@ -93,8 +95,12 @@ class FedPSLSerialClientTrainer(FedAvgSerialClientTrainer):
         self.alpha = alpha
         self.beta = beta
         self.num_classes = num_classes
-        self.optimizer = torch.optim.SGD(self._model.parameters(), lr=self.alpha)
-        self.meta_optimizer = torch.optim.SGD(self._model.outc.parameters(), lr=self.beta)
+        if optimizer_name == "SGD":
+            self.optimizer = torch.optim.SGD(self._model.parameters(), lr=self.alpha)
+            self.meta_optimizer = torch.optim.SGD(self._model.out.parameters(), lr=self.beta)
+        elif optimizer_name == "Adam":
+            self.optimizer = torch.optim.Adam(self._model.parameters(), lr=self.alpha)
+            self.meta_optimizer = torch.optim.Adam(self._model.out.parameters(), lr=self.beta)
 
     def finish(self):
         for idx in range(self.num_clients):
@@ -130,7 +136,7 @@ class FedPSLSerialClientTrainer(FedAvgSerialClientTrainer):
             unlabeled_batch = torch.ne(mask, 0).flatten()
             label[unlabeled_batch] = torch.where(label[unlabeled_batch] == 0, -1, label[unlabeled_batch])
             data, label = data.to(self._device), label.to(self._device)
-            classifier_parameters = deepcopy(list(self._model.outc.parameters()))
+            classifier_parameters = deepcopy(list(self._model.out.parameters()))
             pred_score = self._model(data[:val_idx])
 
             # loss = self.criterion(pred_score, train_label)
@@ -142,7 +148,7 @@ class FedPSLSerialClientTrainer(FedAvgSerialClientTrainer):
 
             pred_score = self._model(data[val_idx:])
             meta_loss = self.criterion(pred_score, label[val_idx:])
-            for param in self._model.outc.parameters():
+            for param in self._model.out.parameters():
                 param.data.copy_(classifier_parameters.pop(0).data)
             self.meta_optimizer.zero_grad()
             meta_loss.backward()

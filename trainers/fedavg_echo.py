@@ -9,7 +9,7 @@ from fedlab.utils.logger import Logger
 from torch.utils.data import DataLoader
 from datetime import datetime
 import torch.nn as nn
-from model.unet import unet
+from model import get_model
 from utils.evaluation import FedClientMultiLabelEvaluator, FedServerMultiLabelEvaluator
 from utils.dataloader import get_echo_dataset
 from utils.io import guarantee_path
@@ -27,9 +27,10 @@ parser.add_argument("--communication_round", type=int, default=50)
 parser.add_argument("--max_epoch", type=int, default=1)
 parser.add_argument("--n_classes", type=int, default=4)
 parser.add_argument("--model", type=str, default="unet")
-parser.add_argument("--case_name", type=str, default="")
+parser.add_argument("--case_name", type=str, default="fedavg_echo")
 parser.add_argument("--num_clients", type=int, default=3)
 parser.add_argument("--mode", type=str, default="fedavg")
+parser.add_argument("--optimizer_name", type=str, default="SGD")
 parser.add_argument("--clients", type=list[str], default=["client1", "client2", "client3"])
 
 if __name__ == "__main__":
@@ -47,7 +48,7 @@ if __name__ == "__main__":
     output_path = args.output_path
     input_path = input_path if input_path[-1] == "/" else input_path + "/"
     output_path = output_path if output_path[-1] == "/" else output_path + "/"
-    output_path = output_path + args.mode + "/" + datetime.now().strftime("%Y%m%d%H%M%S") + "/"
+    output_path = output_path + args.model + "/" + args.mode + "/" + datetime.now().strftime("%Y%m%d%H%M%S") + "/"
     clients = args.clients
 
     guarantee_path(output_path)
@@ -75,7 +76,7 @@ if __name__ == "__main__":
     test_loaders = [
         DataLoader(test_dataset, batch_size=batch_size, shuffle=False) for test_dataset in test_datasets
     ]
-    model = unet()
+    model = get_model(args.model, n_classes=args.n_classes)
     criterion = nn.CrossEntropyLoss(ignore_index=-1)
     client_evaluators = [FedClientMultiLabelEvaluator() for _ in range(1, 4)]
     server_evaluator = FedServerMultiLabelEvaluator()
@@ -129,6 +130,7 @@ if __name__ == "__main__":
         max_epoch=max_epoch,
         output_path=output_path,
         evaluators=client_evaluators,
+        optimizer_name=args.optimizer_name,
         device=None,
         logger=client_loggers
     )

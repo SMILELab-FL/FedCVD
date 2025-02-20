@@ -247,6 +247,7 @@ class FedSMSerialClientTrainer(FedAvgSerialClientTrainer):
             max_epoch: int,
             output_path: str,
             evaluators,
+            optimizer_name: str = "SGD",
             device: torch.device | None = None,
             logger=None,
             personal=False
@@ -261,6 +262,7 @@ class FedSMSerialClientTrainer(FedAvgSerialClientTrainer):
             max_epoch=max_epoch,
             output_path=output_path,
             evaluators=evaluators,
+            optimizer_name=optimizer_name,
             device=device,
             logger=logger,
             personal=personal
@@ -270,7 +272,12 @@ class FedSMSerialClientTrainer(FedAvgSerialClientTrainer):
         self.global_models = []
         self.local_models = [self.model_parameters for _ in range(self.num_clients)]
         self.s_criterion = torch.nn.CrossEntropyLoss()
-        self.s_optimizer = torch.optim.SGD(self.model_selector.parameters(), lr=lr)
+        if optimizer_name == "SGD":
+            self.s_optimizer = torch.optim.SGD(self.model_selector.parameters(), lr=lr)
+        elif optimizer_name == "Adam":
+            self.s_optimizer = torch.optim.Adam(self.model_selector.parameters(), lr=lr)
+        else:
+            raise ValueError("Invalid optimizer name")
 
     def local_process(self, payload, id_list):
         model_parameters = payload[0]

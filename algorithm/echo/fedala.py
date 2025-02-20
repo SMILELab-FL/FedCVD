@@ -48,6 +48,7 @@ class FedALASerialClientTrainer(FedAvgSerialClientTrainer):
             eta: float = 1.0,
             threshold: float = 0.1,
             num_pre_loss: int = 10,
+            optimizer_name: str = "SGD",
             device: torch.device | None = None,
             logger=None,
             personal=False
@@ -63,6 +64,7 @@ class FedALASerialClientTrainer(FedAvgSerialClientTrainer):
             max_epoch=max_epoch,
             output_path=output_path,
             evaluators=evaluators,
+            optimizer_name=optimizer_name,
             device=device,
             logger=logger,
             personal=personal

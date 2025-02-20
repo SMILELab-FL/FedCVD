@@ -11,6 +11,7 @@ from utils.evaluation import transfer_tensor_to_numpy, calculate_accuracy, get_p
 from utils.io import guarantee_path
 
 import torch
+import wandb
 import numpy as np
 import tqdm
 import pandas as pd
@@ -26,6 +27,7 @@ class CentralizedSGDTrainer:
             evaluator,
             max_epoch: int,
             output_path: str,
+            optimizer_name: str = "SGD",
             device: torch.device | None = None,
             logger: Logger | None = None
     ):
@@ -36,7 +38,12 @@ class CentralizedSGDTrainer:
         self.max_epoch = max_epoch
         self._device = get_best_device() if device is None else device
         self._model = deepcopy(model).to(self._device)
-        self.optimizer = torch.optim.SGD(self._model.parameters(), lr)
+        if optimizer_name == "SGD":
+            self.optimizer = torch.optim.SGD(self._model.parameters(), lr)
+        elif optimizer_name == "Adam":
+            self.optimizer = torch.optim.Adam(self._model.parameters(), lr)
+        else:
+            raise ValueError(f"Unsupported optimizer: {optimizer_name}")
         self._LOGGER = Logger() if logger is None else logger
         self.output_path = output_path
         self.evaluator = evaluator
@@ -169,6 +176,15 @@ class CentralizedSGDTrainer:
             metric_dict = calculate_multilabel_metrics(all_pred_score_np, all_pred_label_np, all_true_label_np)
             metric_dict["loss"] = metric[0] / metric[2]
             l_metric_dict[str(idx)] = metric_dict
+            wandb.log(
+                {
+                    f"client{idx + 1}_local_test_loss": metric[0] / metric[2],
+                    f"client{idx + 1}_local_test_acc": metric[1] / metric[2],
+                    f"client{idx + 1}_local_test_micro_f1": metric_dict["micro_f1"],
+                    f"client{idx + 1}_local_test_mAP": float(np.average(metric_dict["average_precision_score"]))
+                },
+                step=epoch
+            )
             self._LOGGER.info(f"Epoch {epoch} | Client {idx + 1} Local Test Loss: {metric[0] / metric[2]} | Local Test Acc: {metric[1] / metric[2]}")
         evaluator.add_dict("local_test", epoch, l_metric_dict)
 
@@ -223,5 +239,14 @@ class CentralizedSGDTrainer:
         )
         metric_dict = calculate_multilabel_metrics(all_pred_score_np, all_pred_label_np, all_true_label_np)
         metric_dict["loss"] = metric[0] / metric[2]
+        wandb.log(
+            {
+                f"global_test_loss": metric[0] / metric[2],
+                f"global_test_acc": metric[1] / metric[2],
+                f"global_test_micro_f1": metric_dict["micro_f1"],
+                f"global_test_mAP": float(np.average(metric_dict["average_precision_score"]))
+            },
+            step=epoch
+        )
         evaluator.add_dict("global_test", epoch, metric_dict)
         self._LOGGER.info(f"Epoch {epoch} | Global Test Loss: {metric[0] / metric[2]} | Global Test Acc: {metric[1] / metric[2]}")

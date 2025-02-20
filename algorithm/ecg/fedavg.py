@@ -190,6 +190,7 @@ class FedAvgSerialClientTrainer(SGDSerialClientTrainer):
             max_epoch: int,
             output_path: str,
             evaluators,
+            optimizer_name: str = "SGD",
             device: torch.device | None = None,
             logger=None,
             personal=False
@@ -199,7 +200,12 @@ class FedAvgSerialClientTrainer(SGDSerialClientTrainer):
         self.lr = lr
         self.criterion = criterion
         self.max_epoch = max_epoch
-        self.optimizer = torch.optim.SGD(self._model.parameters(), self.lr)
+        if optimizer_name == "SGD":
+            self.optimizer = torch.optim.SGD(self._model.parameters(), self.lr)
+        elif optimizer_name == "Adam":
+            self.optimizer = torch.optim.Adam(self._model.parameters(), self.lr)
+        else:
+            raise ValueError(f"Unsupported optimizer: {optimizer_name}")
         self.output_path = output_path
         self.current_round = 0
         self.evaluators = evaluators

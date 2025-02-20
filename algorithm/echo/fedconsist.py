@@ -174,6 +174,7 @@ class FedConsistSerialClientTrainer(SGDSerialClientTrainer):
             max_epoch: int,
             output_path: str,
             evaluators,
+            optimizer_name: str = "SGD",
             device: torch.device | None = None,
             logger=None,
             personal=False
@@ -185,8 +186,14 @@ class FedConsistSerialClientTrainer(SGDSerialClientTrainer):
         self.unlabeled_lr = unlabeled_lr
         self.criterion = criterion
         self.max_epoch = max_epoch
-        self.optimizer = torch.optim.SGD(self._model.parameters(), self.labeled_lr)
-        self.unlabeled_optimizer = torch.optim.SGD(self._model.parameters(), self.unlabeled_lr)
+        if optimizer_name == "SGD":
+            self.optimizer = torch.optim.SGD(self._model.parameters(), self.labeled_lr)
+            self.unlabeled_optimizer = torch.optim.SGD(self._model.parameters(), self.unlabeled_lr)
+        elif optimizer_name == "Adam":
+            self.optimizer = torch.optim.Adam(self._model.parameters(), self.labeled_lr)
+            self.unlabeled_optimizer = torch.optim.Adam(self._model.parameters(), self.unlabeled_lr)
+        else:
+            raise NotImplementedError("Optimizer not supported")
         self.output_path = output_path
         self.current_round = 0
         self.evaluators = evaluators

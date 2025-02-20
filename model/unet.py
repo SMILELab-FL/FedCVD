@@ -89,7 +89,7 @@ class Unet(nn.Module):
         self.up2 = (Up(512, 256 // factor, bilinear))
         self.up3 = (Up(256, 128 // factor, bilinear))
         self.up4 = (Up(128, 64, bilinear))
-        self.outc = (OutConv(64, n_classes))
+        self.out = (OutConv(64, n_classes))
 
     def forward(self, x):
         x1 = self.inc(x)
@@ -101,8 +101,15 @@ class Unet(nn.Module):
         x = self.up2(x, x3)
         x = self.up3(x, x2)
         x = self.up4(x, x1)
-        out = self.outc(x)
+        out = self.out(x)
         return out
 
 def unet(n_channels=1, n_classes=4, bilinear=False):
     return Unet(n_channels, n_classes, bilinear)
+
+
+if __name__ == "__main__":
+    model = unet()
+    print(model)
+    x = torch.randn(1, 1, 112, 112)
+    print(model(x).shape)

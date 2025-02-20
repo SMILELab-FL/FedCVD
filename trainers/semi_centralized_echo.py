@@ -8,7 +8,7 @@ from fedlab.utils.logger import Logger
 from torch.utils.data import DataLoader
 from datetime import datetime
 import torch.nn as nn
-from model.unet import unet
+from model import get_model
 from utils.evaluation import MultiLabelEvaluator
 from utils.dataloader import get_echo_dataset
 from utils.io import guarantee_path
@@ -30,6 +30,7 @@ parser.add_argument("--t2", type=int, default=70)
 parser.add_argument("--weight", type=float, default=1)
 parser.add_argument("--case_name", type=str, default="")
 parser.add_argument("--mode", type=str, default="centralized-semi")
+parser.add_argument("--optimizer_name", type=str, default="SGD")
 parser.add_argument("--clients", type=list[str], default=["client1", "client2", "client3"])
 parser.add_argument("--frac", type=float, default=1.0)
 
@@ -44,7 +45,7 @@ if __name__ == "__main__":
     output_path = args.output_path
     input_path = input_path if input_path[-1] == "/" else input_path + "/"
     output_path = output_path if output_path[-1] == "/" else output_path + "/"
-    output_path = output_path + args.mode + "/" + datetime.now().strftime("%Y%m%d%H%M%S") + "/"
+    output_path = output_path + args.model + "/" + args.mode + "/" + datetime.now().strftime("%Y%m%d%H%M%S") + "/"
     clients = args.clients
 
     guarantee_path(output_path)
@@ -80,7 +81,7 @@ if __name__ == "__main__":
     test_loaders = [
         DataLoader(test_dataset, batch_size=batch_size, shuffle=False) for test_dataset in test_datasets
     ]
-    model = unet(n_classes=args.n_classes)
+    model = get_model(args.model, n_classes=args.n_classes)
     criterion = nn.CrossEntropyLoss()
 
     evaluator = MultiLabelEvaluator()
@@ -100,7 +101,7 @@ if __name__ == "__main__":
         f.write(json.dumps(setting))
     logger = Logger(log_name="centralized-semi", log_file=output_path + "logger.log")
     wandb.init(
-        project="FedCVD_ECHO",
+        project="FedCVD_ECHO_FL",
         name=args.case_name,
         config={
             "dataset": "ECHO",
@@ -123,6 +124,7 @@ if __name__ == "__main__":
         max_epoch=max_epoch,
         output_path=output_path,
         num_classes=args.n_classes,
+        optimizer_name=args.optimizer_name,
         device=None,
         logger=logger
     )

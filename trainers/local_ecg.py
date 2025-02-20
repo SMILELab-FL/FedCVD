@@ -9,7 +9,7 @@ from fedlab.utils.logger import Logger
 from torch.utils.data import DataLoader
 from datetime import datetime
 import torch.nn as nn
-from model.resnet import resnet1d34
+from model import get_model
 from utils.evaluation import MultiLabelEvaluator
 from utils.dataloader import get_ecg_dataset
 from utils.io import guarantee_path
@@ -27,6 +27,8 @@ parser.add_argument("--max_epoch", type=int, default=50)
 parser.add_argument("--lr", type=float, default=0.1)
 parser.add_argument("--model", type=str, default="resnet1d34")
 parser.add_argument("--mode", type=str, default="local")
+parser.add_argument("--case_name", type=str, default="local_ecg")
+parser.add_argument("--optimizer_name", type=str, default="SGD")
 parser.add_argument("--clients", type=list[str], default=["client1", "client2", "client3", "client4"])
 
 if __name__ == "__main__":
@@ -42,39 +44,39 @@ if __name__ == "__main__":
     base_output_path = output_path if output_path[-1] == "/" else output_path + "/"
 
     clients = args.clients
-
     test_datasets = [get_ecg_dataset(
         [f"{input_path}/ECG/preprocessed/{client}/test.csv"],
         base_path=f"{input_path}/ECG/preprocessed/",
-        locations=client,
+        locations=[client],
         file_name="records.h5",
         n_classes=20
     ) for client in clients]
 
 
     for client in clients:
+        print(client)
         train_dataset = get_ecg_dataset(
             [
                 f"{input_path}/ECG/preprocessed/{client}/train.csv"
             ],
             base_path=f"{input_path}/ECG/preprocessed/",
             locations=[client],
-            file_name="records_20.h5",
+            file_name="records.h5",
             n_classes=20
         )
-        output_path = base_output_path + args.mode + "/" + client + "/" + datetime.now().strftime("%Y%m%d%H%M%S") + "/"
+        output_path = base_output_path + args.model + "/" + args.mode + "/" + client + "/" + datetime.now().strftime("%Y%m%d%H%M%S") + "/"
         guarantee_path(output_path)
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         test_loaders = [
             DataLoader(test_dataset, batch_size=batch_size, shuffle=False) for test_dataset in test_datasets
         ]
-        model = resnet1d34()
+        model = get_model(args.model)
         criterion = nn.BCELoss()
         evaluator = MultiLabelEvaluator()
 
         setting = {
             "dataset": "ECG",
-            "model": "resnet1d34",
+            "model": args.model,
             "batch_size": batch_size,
             "lr": lr,
             "seed": args.seed,
@@ -86,7 +88,7 @@ if __name__ == "__main__":
 
         wandb.init(
             project="FedCVD_ECG_FL",
-            name=args.case_name,
+            name=client + args.case_name,
             config=setting
         )
 
@@ -101,6 +103,7 @@ if __name__ == "__main__":
             evaluator=evaluator,
             max_epoch=max_epoch,
             output_path=output_path,
+            optimizer_name=args.optimizer_name,
             device=None,
             logger=logger
         )

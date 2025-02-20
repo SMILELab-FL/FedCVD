@@ -34,6 +34,7 @@ class FedInitSerialClientTrainer(FedAvgSerialClientTrainer):
             max_epoch: int,
             output_path: str,
             evaluators,
+            optimizer_name: str = "SGD",
             device: torch.device | None = None,
             logger=None,
             personal=False
@@ -48,6 +49,7 @@ class FedInitSerialClientTrainer(FedAvgSerialClientTrainer):
             max_epoch=max_epoch,
             output_path=output_path,
             evaluators=evaluators,
+            optimizer_name=optimizer_name,
             device=device,
             logger=logger,
             personal=personal

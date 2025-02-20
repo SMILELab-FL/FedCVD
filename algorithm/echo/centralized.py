@@ -30,6 +30,7 @@ class CentralizedSGDTrainer:
             max_epoch: int,
             output_path: str,
             num_classes: int,
+            optimizer_name: str = "SGD",
             device: torch.device | None = None,
             logger: Logger | None = None
     ):
@@ -40,7 +41,12 @@ class CentralizedSGDTrainer:
         self.max_epoch = max_epoch
         self._device = get_best_device() if device is None else device
         self._model = deepcopy(model).to(self._device)
-        self.optimizer = torch.optim.SGD(self._model.parameters(), lr)
+        if optimizer_name == "SGD":
+            self.optimizer = torch.optim.SGD(self._model.parameters(), lr)
+        elif optimizer_name == "Adam":
+            self.optimizer = torch.optim.Adam(self._model.parameters(), lr)
+        else:
+            raise ValueError(f"Unsupported optimizer: {optimizer_name}")
         self._LOGGER = Logger() if logger is None else logger
         self.output_path = output_path
         self.evaluator = evaluator
@@ -59,6 +65,7 @@ class CentralizedSGDTrainer:
             self.train(epoch, evaluator)
             self.local_test(evaluator, epoch)
             self.global_test(evaluator, epoch)
+        self.finish()
 
 
     def finish(self):
@@ -235,6 +242,7 @@ class CentralizedIgnoreSGDTrainer:
             max_epoch: int,
             output_path: str,
             num_classes: int,
+            optimizer_name: str = "SGD",
             device: torch.device | None = None,
             logger: Logger | None = None
     ):
@@ -245,7 +253,13 @@ class CentralizedIgnoreSGDTrainer:
         self.max_epoch = max_epoch
         self._device = get_best_device() if device is None else device
         self._model = deepcopy(model).to(self._device)
-        self.optimizer = torch.optim.SGD(self._model.parameters(), lr)
+        if optimizer_name == "SGD":
+            self.optimizer = torch.optim.SGD(self._model.parameters(), lr)
+        elif optimizer_name == "Adam":
+            self.optimizer = torch.optim.Adam(self._model.parameters(), lr)
+        else:
+            raise ValueError(f"Unsupported optimizer: {optimizer_name}")
+        # self.optimizer = torch.optim.SGD(self._model.parameters(), lr)
         self._LOGGER = Logger() if logger is None else logger
         self.output_path = output_path
         self.evaluator = evaluator
@@ -379,7 +393,8 @@ class CentralizedIgnoreSGDTrainer:
                     f"client{idx + 1}_test_micro_dice": metric[1] / metric[-1],
                     f"client{idx + 1}_test_macro_dice": metric[2] / metric[-1],
                     f"client{idx + 1}_test_hd": metric[3] / metric[-1]
-                }
+                },
+                step=epoch
             )
             l_metric_dict[str(idx)] = metric_dict
             self._LOGGER.info(f"Epoch {epoch} | Client {idx + 1} Local Test Loss: {metric[0] / metric[-1]} | Local Test Dice: {metric[2] / metric[-1]}")
@@ -430,7 +445,8 @@ class CentralizedIgnoreSGDTrainer:
                 "global_test_micro_dice": metric[1] / metric[-1],
                 "global_test_macro_dice": metric[2] / metric[-1],
                 "global_test_hd": metric[3] / metric[-1]
-            }
+            },
+            step=epoch
         )
         evaluator.add_dict("global_test", epoch, metric_dict)
         self._LOGGER.info(f"Epoch {epoch} | Global Test Loss: {metric[0] / metric[-1]} | Global Test Dice: {metric[2] / metric[-1]}")
@@ -449,6 +465,7 @@ class CentralizedSemiSGDTrainer:
             max_epoch: int,
             output_path: str,
             num_classes: int,
+            optimizer_name: str = "SGD",
             device: torch.device | None = None,
             logger: Logger | None = None
     ):
@@ -460,7 +477,12 @@ class CentralizedSemiSGDTrainer:
         self.max_epoch = max_epoch
         self._device = get_best_device() if device is None else device
         self._model = deepcopy(model).to(self._device)
-        self.optimizer = torch.optim.SGD(self._model.parameters(), lr)
+        if optimizer_name == "SGD":
+            self.optimizer = torch.optim.SGD(self._model.parameters(), lr)
+        elif optimizer_name == "Adam":
+            self.optimizer = torch.optim.Adam(self._model.parameters(), lr)
+        else:
+            raise ValueError(f"Unsupported optimizer: {optimizer_name}")
         self._LOGGER = Logger() if logger is None else logger
         self.output_path = output_path
         self.evaluator = evaluator
@@ -587,7 +609,8 @@ class CentralizedSemiSGDTrainer:
                 "train_micro_dice": metric[1] / metric[-1],
                 "train_macro_dice": metric[2] / metric[-1],
                 "train_hd": metric[3] / metric[-1]
-            }
+            },
+            step = epoch
         )
         evaluator.add_dict("train", epoch, metric_dict)
         self._LOGGER.info(f"Epoch {epoch} | Train Loss: {metric[0] / metric[-1]} | Train Dice: {metric[2] / metric[-1]}")
@@ -637,7 +660,8 @@ class CentralizedSemiSGDTrainer:
                     f"client{idx + 1}_test_micro_dice": metric[1] / metric[-1],
                     f"client{idx + 1}_test_macro_dice": metric[2] / metric[-1],
                     f"client{idx + 1}_test_hd": metric[3] / metric[-1]
-                }
+                },
+                step=epoch
             )
             l_metric_dict[str(idx)] = metric_dict
             self._LOGGER.info(f"Epoch {epoch} | Client {idx + 1} Local Test Loss: {metric[0] / metric[-1]} | Local Test Dice: {metric[2] / metric[-1]}")
@@ -688,7 +712,8 @@ class CentralizedSemiSGDTrainer:
                 "global_test_micro_dice": metric[1] / metric[-1],
                 "global_test_macro_dice": metric[2] / metric[-1],
                 "global_test_hd": metric[3] / metric[-1]
-            }
+            },
+            step=epoch
         )
         evaluator.add_dict("global_test", epoch, metric_dict)
         self._LOGGER.info(f"Epoch {epoch} | Global Test Loss: {metric[0] / metric[-1]} | Global Test Dice: {metric[2] / metric[-1]}")
